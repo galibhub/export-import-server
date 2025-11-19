@@ -71,6 +71,13 @@ app.post('/products',async(req,res)=>{
   })
 })
 
+// Api for My export
+app.get('/myExport',async(req,res)=>{
+  const email=req.query.email;
+  const  result= await productCollection.find({exporterEmail:email}).toArray()
+  res.send(result);
+})
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
