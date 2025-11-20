@@ -28,6 +28,7 @@ async function run() {
     //create collections
     const db = client.db("export-import");
     const productCollection = db.collection("products");
+    const importCollection = db.collection("import");
 
     //latest 6 data
     app.get("/latest-products", async (req, res) => {
@@ -71,44 +72,40 @@ async function run() {
       });
     });
 
-
     //update export product api
     app.put("/products/:id", async (req, res) => {
       const { id } = req.params;
-      const data=req.body;
-      
-      const objectId=new ObjectId(id)
-      const filter= {_id: objectId}
-      const update={
-        $set:data
-      }
-      const result=await productCollection.updateOne(filter,update)
+      const data = req.body;
+
+      const objectId = new ObjectId(id);
+      const filter = { _id: objectId };
+      const update = {
+        $set: data,
+      };
+      const result = await productCollection.updateOne(filter, update);
       res.send({
         success: true,
-        result
+        result,
       });
     });
 
+    //delete api
 
+    app.delete("/products/:id", async (req, res) => {
+      const { id } = req.params;
+      // const objectId=new ObjectId(id)
+      //     const filter= {_id: objectId}
 
-//delete api
+      const result = await productCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      console.log(result);
 
-app.delete('/products/:id',async(req,res)=>{
-  const {id}=req.params;
-  // const objectId=new ObjectId(id)
-  //     const filter= {_id: objectId}
-
-  const result=await productCollection.deleteOne({_id:new ObjectId(id)})
-  console.log(result)
-
-
-  res.send({
-    success:true,
-    result
-  })
-})
-
-
+      res.send({
+        success: true,
+        result,
+      });
+    });
 
     // Api for My export
     app.get("/myExport", async (req, res) => {
@@ -116,6 +113,38 @@ app.delete('/products/:id',async(req,res)=>{
       const result = await productCollection
         .find({ exporterEmail: email })
         .toArray();
+      res.send({
+        success: true,
+        result,
+      });
+    });
+
+    //------ api for myImport
+
+    app.post("/myImport", async (req, res) => {
+      const data = req.body;
+      const result = await importCollection.insertOne(data);
+      res.send({
+        success: true,
+        result,
+      });
+    });
+
+  
+
+    app.get("/myImport", async (req, res) => {
+      const email = req.query.email;
+      const result = await importCollection
+        .find({ importerEmail: email })
+        .toArray();
+      res.send(result);
+    });
+
+    // --- Delete form My Import List ---
+    app.delete("/myImport/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await importCollection.deleteOne(query);
       res.send(result);
     });
 
