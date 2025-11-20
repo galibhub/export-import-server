@@ -58,26 +58,65 @@ async function run() {
     });
 
     // post for database
-    
-app.post('/products',async(req,res)=>{
-  const data=req.body;
-  console.log(data)
-  const result= await productCollection.insertOne(data)
 
-  res.send({
+    app.post("/products", async (req, res) => {
+      const data = req.body;
+      console.log(data);
+      const result = await productCollection.insertOne(data);
+
+      res.send({
+        success: true,
+        result,
+        insertedId: result.insertedId,
+      });
+    });
+
+
+    //update export product api
+    app.put("/products/:id", async (req, res) => {
+      const { id } = req.params;
+      const data=req.body;
+      
+      const objectId=new ObjectId(id)
+      const filter= {_id: objectId}
+      const update={
+        $set:data
+      }
+      const result=await productCollection.updateOne(filter,update)
+      res.send({
+        success: true,
+        result
+      });
+    });
+
+
+
+//delete api
+
+app.delete('/products/:id',async(req,res)=>{
+  const {id}=req.params;
+  // const objectId=new ObjectId(id)
+  //     const filter= {_id: objectId}
+
+  const result=await productCollection.deleteOne({_id:new ObjectId(id)})
+
+
+  req.send({
     success:true,
-    result,
-    insertedId: result.insertedId
+    result
   })
 })
 
-// Api for My export
-app.get('/myExport',async(req,res)=>{
-  const email=req.query.email;
-  const  result= await productCollection.find({exporterEmail:email}).toArray()
-  res.send(result);
-})
 
+
+    // Api for My export
+    app.get("/myExport", async (req, res) => {
+      const email = req.query.email;
+      const result = await productCollection
+        .find({ exporterEmail: email })
+        .toArray();
+      res.send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
