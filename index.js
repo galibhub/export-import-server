@@ -99,9 +99,10 @@ app.delete('/products/:id',async(req,res)=>{
   //     const filter= {_id: objectId}
 
   const result=await productCollection.deleteOne({_id:new ObjectId(id)})
+  console.log(result)
 
 
-  req.send({
+  res.send({
     success:true,
     result
   })
