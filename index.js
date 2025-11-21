@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-
+require("dotenv").config()
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -9,8 +9,9 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+console.log(process.env.DB_PASSWORD)
 const uri =
-  "mongodb+srv://export-import:6MIBVAWsy9DTYvTo@web-projects.djmog22.mongodb.net/?appName=web-projects";
+  `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@web-projects.djmog22.mongodb.net/?appName=web-projects`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -23,7 +24,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     //create collections
     const db = client.db("export-import");
@@ -153,7 +154,7 @@ async function run() {
       res.send(result)
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
