@@ -130,8 +130,6 @@ async function run() {
       });
     });
 
-  
-
     app.get("/myImport", async (req, res) => {
       const email = req.query.email;
       const result = await importCollection
@@ -146,6 +144,13 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await importCollection.deleteOne(query);
       res.send(result);
+    });
+
+    //Search All Product Api
+    app.get("/search", async (req, res) => {
+      const search_text = req.query.search;
+      const result = await productCollection.find({productName: {$regex:search_text,$options:"i"} }).toArray();
+      res.send(result)
     });
 
     await client.db("admin").command({ ping: 1 });
