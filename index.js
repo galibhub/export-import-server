@@ -6,10 +6,15 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 //middleware
-app.use(cors());
+app.use(cors({
+  origin:["http://localhost:5173",]
+}));
 app.use(express.json());
 
 console.log(process.env.DB_PASSWORD)
+
+
+
 const uri =
   `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@web-projects.djmog22.mongodb.net/?appName=web-projects`;
 
