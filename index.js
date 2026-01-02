@@ -1,22 +1,25 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-require("dotenv").config()
+require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 3000;
 
 //middleware
-app.use(cors({
-  origin:["http://localhost:5173","https://export-import-hub.netlify.app"]
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://export-import-hub.netlify.app",
+    ],
+  })
+);
 app.use(express.json());
 
-console.log(process.env.DB_PASSWORD)
+console.log(process.env.DB_PASSWORD);
 
-
-
-const uri =
-  `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@web-projects.djmog22.mongodb.net/?appName=web-projects`;
+const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@web-projects.djmog22.mongodb.net/?appName=web-projects`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -29,17 +32,86 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // await client.connect();
+    await client.connect();
 
     //create collections
     const db = client.db("export-import");
     const productCollection = db.collection("products");
     const importCollection = db.collection("import");
+    const userCollection = db.collection("users");
+
+    //===========================user==============================//
+
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+
+      const existingUser = await userCollection.findOne({ email: user.email });
+      if (existingUser) {
+        return res.send({ message: "User already exists" });
+      }
+
+      const result = await userCollection.insertOne({
+        name: user.name || "Unknown",
+        email: user.email,
+        role: "user",
+        createdAt: new Date(),
+      });
+
+      res.send(result);
+    });
+
+    //get api for user role
+
+    app.get("/users/role/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = await userCollection.findOne({ email });
+      res.send({ role: user?.role || "user" });
+    });
+
+    //get user
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
+    //admin role change api
+
+    app.patch("/users/role/:id", async (req, res) => {
+      const id = req.params.id;
+      const { role } = req.body;
+
+      const result = await userCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { role } }
+      );
+
+      res.send(result);
+    });
+
+    //get admin products
+    app.get("/admin/products", async (req, res) => {
+      const result = await productCollection.find().toArray();
+      res.send(result);
+    });
+
+    //update products
+    app.patch("/products/approve/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const result = await productCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: "approved" } }
+      );
+
+      res.send(result);
+    });
+
+    //================================END=========================//
 
     //latest 6 data
     app.get("/latest-products", async (req, res) => {
       const result = await productCollection
-        .find()
+        .find({ status: "approved" })
         .sort({ createdAt: -1 })
         .limit(6)
         .toArray();
@@ -48,7 +120,9 @@ async function run() {
 
     //get all product data from mongodb
     app.get("/products", async (req, res) => {
-      const result = await productCollection.find().toArray();
+      const result = await productCollection
+        .find({ status: "approved" })
+        .toArray();
 
       res.send(result);
     });
@@ -57,20 +131,25 @@ async function run() {
     app.get("/products/:id", async (req, res) => {
       const { id } = req.params;
       console.log(id);
-      const result = await productCollection.findOne({ _id: new ObjectId(id) });
+      const result = await productCollection.findOne({
+        _id: new ObjectId(id),
+        status: "approved",
+      });
+
       res.send({
         success: true,
         result,
       });
     });
 
-    // post for database
-
     app.post("/products", async (req, res) => {
-      const data = req.body;
-      console.log(data);
-      const result = await productCollection.insertOne(data);
+      const data = {
+        ...req.body,
+        status: "pending", // ⛔ admin approve করবে
+        createdAt: new Date(),
+      };
 
+      const result = await productCollection.insertOne(data);
       res.send({
         success: true,
         result,
@@ -155,11 +234,16 @@ async function run() {
     //Search All Product Api
     app.get("/search", async (req, res) => {
       const search_text = req.query.search;
-      const result = await productCollection.find({productName: {$regex:search_text,$options:"i"} }).toArray();
-      res.send(result)
+      const result = await productCollection
+        .find({
+          productName: { $regex: search_text, $options: "i" },
+          status: "approved",
+        })
+        .toArray();
+      res.send(result);
     });
 
-    // await client.db("admin").command({ ping: 1 });
+    await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
