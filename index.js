@@ -88,7 +88,36 @@ async function run() {
       res.send(result);
     });
 
+    // delete user (admin)
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    // ===== Admin Dashboard Stats =====
+    app.get("/admin/stats", async (req, res) => {
+      const usersCount = await userCollection.countDocuments();
+      const productsCount = await productCollection.countDocuments();
+      const approvedProducts = await productCollection.countDocuments({
+        status: "approved",
+      });
+      const pendingProducts = await productCollection.countDocuments({
+        status: "pending",
+      });
+      const importsCount = await importCollection.countDocuments();
+
+      res.send({
+        users: usersCount,
+        products: productsCount,
+        approvedProducts,
+        pendingProducts,
+        imports: importsCount,
+      });
+    });
+
     //get admin products
+
     app.get("/admin/products", async (req, res) => {
       const result = await productCollection.find().toArray();
       res.send(result);
