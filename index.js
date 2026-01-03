@@ -88,6 +88,30 @@ async function run() {
       res.send(result);
     });
 
+
+   // get single user by email
+app.get("/users/by-email/:email", async (req, res) => {
+  const email = req.params.email;
+  const user = await userCollection.findOne({ email });
+  res.send(user);
+});
+
+// update user profile
+app.patch("/users/by-email/:email", async (req, res) => {
+  const email = req.params.email;
+  const { name, photoURL } = req.body;
+
+  const result = await userCollection.updateOne(
+    { email },
+    { $set: { name, photoURL } }
+  );
+
+  res.send(result);
+});
+
+
+
+
     // delete user (admin)
     app.delete("/users/:id", async (req, res) => {
       const id = req.params.id;
@@ -119,7 +143,9 @@ async function run() {
     //get admin products
 
     app.get("/admin/products", async (req, res) => {
-      const result = await productCollection.find().toArray();
+      const result = await productCollection.find()
+      .sort({ createdAt: -1 })
+      .toArray();
       res.send(result);
     });
 
